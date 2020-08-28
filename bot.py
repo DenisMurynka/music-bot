@@ -4,12 +4,13 @@ import telebot                            #pip install telebot
 import youtube_dl
 import urllib.request
 import re,os
-import datetime
+from datetime import datetime
 from sqlalchemy import create_engine,Table, Column, Integer, String, MetaData,Date,DateTime
+from sqlalchemy.orm import sessionmaker
 from admin import TOKEN
 
 bot = telebot.TeleBot(TOKEN)
-
+now = datetime.now()
 engine = create_engine('sqlite:///college.db', echo = True)
 meta = MetaData()
 
@@ -20,17 +21,22 @@ users = Table(
    Column('lastname', String),
    Column('username', String),
    Column('songname', String),
-   Column('date', DateTime,default=datetime.datetime.utcnow),
+   Column('date', DateTime),
 )
 
 
 #meta.create_all(engine) #run once time
 
 def db_inserting(message,songname):
-    users.insert().values(name=message.from_user.first_name)
-    users.insert().values(lastname=message.from_user.last_name)
-    users.insert().values(username=message.from_user.username)
-    users.insert().values(songname=songname)
+
+    engine.execute('INSERT INTO "users" (name,lastname,username,songname,date ) VALUES (?,?,?,?,?) ',
+                   (message.from_user.first_name,
+                    message.from_user.last_name,
+                    message.from_user.username,
+                    songname,
+                    now.strftime("%H:%M:%S")));
+
+
 
 def get_title(youtube_string):
     video_title = pafy.new(youtube_string)  # instant created
@@ -55,7 +61,6 @@ def download_from_youTube(youtube_string):  ##Download from YOUTUBE
         ydl.download([youtube_string])
 
 
-
 # Handle '/start' and '/help'
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
@@ -67,7 +72,7 @@ def send_welcome(message):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
 
-    # print('this is your audio:  ',download_from_youTube(message.text))
+   # print('this is your audio:  ',download_from_youTube(message.text))
     download_from_youTube(message.text)
 
 
@@ -80,5 +85,6 @@ def echo_message(message):
     db_inserting(message, (pafy.new(message.text)).title)
 
     os.remove((pafy.new(message.text)).title) #free memory
+
 
 bot.polling(none_stop=True)
