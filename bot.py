@@ -15,9 +15,10 @@ bot = telebot.TeleBot(TOKEN)
 
 engine = create_engine('sqlite:///college.db', echo = True)
 meta = MetaData()
-
+###
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-
+log = logging.getLogger("ex")
+##
 users = Table(
    'users', meta,
    Column('id', Integer, primary_key = True),
@@ -41,7 +42,6 @@ def db_inserting(message,songname):
                     today.strftime("%d/%m/%Y") +' '+ now.strftime("%H:%M:%S")));
 
 
-
 def get_title(youtube_string):
     video_title = pafy.new(youtube_string)  # instant created
     regex = re.compile(
@@ -51,6 +51,7 @@ def get_title(youtube_string):
     os.rename(video_title.title + '-' + match.group('id') + '.mp3', video_title.title)
 
     return video_title.title
+
 def download_from_youTube(youtube_string):  ##Download from YOUTUBE
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -87,8 +88,10 @@ def echo_message(message):
         db_inserting(message, (pafy.new(message.text)).title)
 
         os.remove((pafy.new(message.text)).title) #free memory
-
+        raise RuntimeError
     except Exception as e:
         logging.exception("Exception occurred")
+        log.exception(e)
+
 
 bot.polling(none_stop=True)
