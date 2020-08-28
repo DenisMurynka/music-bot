@@ -2,17 +2,21 @@
 import pafy
 import telebot                            #pip install telebot
 import youtube_dl
-import urllib.request
+import logging
 import re,os
-from datetime import datetime
+from datetime import datetime,date
 from sqlalchemy import create_engine,Table, Column, Integer, String, MetaData,Date,DateTime
-from sqlalchemy.orm import sessionmaker
+
 from admin import TOKEN
 
-bot = telebot.TeleBot(TOKEN)
 now = datetime.now()
+
+bot = telebot.TeleBot(TOKEN)
+
 engine = create_engine('sqlite:///college.db', echo = True)
 meta = MetaData()
+
+logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 users = Table(
    'users', meta,
@@ -28,13 +32,13 @@ users = Table(
 #meta.create_all(engine) #run once time
 
 def db_inserting(message,songname):
-
+    today = date.today()
     engine.execute('INSERT INTO "users" (name,lastname,username,songname,date ) VALUES (?,?,?,?,?) ',
                    (message.from_user.first_name,
                     message.from_user.last_name,
                     message.from_user.username,
                     songname,
-                    now.strftime("%H:%M:%S")));
+                    today.strftime("%d/%m/%Y") +' '+ now.strftime("%H:%M:%S")));
 
 
 
@@ -71,20 +75,20 @@ def send_welcome(message):
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
+    try:
+        download_from_youTube(message.text)
 
-   # print('this is your audio:  ',download_from_youTube(message.text))
-    download_from_youTube(message.text)
+        bot.send_audio(
+                       message.chat.id,
+                       open(get_title(message.text), 'rb'),
+                       timeout=20
+                      )
 
+        db_inserting(message, (pafy.new(message.text)).title)
 
-    bot.send_audio(
-                   message.chat.id,
-                   open(get_title(message.text), 'rb'),
-                   timeout=20
-                  )
+        os.remove((pafy.new(message.text)).title) #free memory
 
-    db_inserting(message, (pafy.new(message.text)).title)
-
-    os.remove((pafy.new(message.text)).title) #free memory
-
+    except Exception as e:
+        logging.exception("Exception occurred")
 
 bot.polling(none_stop=True)
