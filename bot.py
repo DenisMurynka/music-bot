@@ -1,11 +1,37 @@
+# by Denis Murynka
 import pafy
 import telebot                            #pip install telebot
 import youtube_dl
 import urllib.request
 import re,os
+import datetime
+from sqlalchemy import create_engine,Table, Column, Integer, String, MetaData,Date,DateTime
 from admin import TOKEN
-#init
+
 bot = telebot.TeleBot(TOKEN)
+
+engine = create_engine('sqlite:///college.db', echo = True)
+meta = MetaData()
+
+users = Table(
+   'users', meta,
+   Column('id', Integer, primary_key = True),
+   Column('name', String),
+   Column('lastname', String),
+   Column('username', String),
+   Column('songname', String),
+   Column('date', DateTime,default=datetime.datetime.utcnow),
+)
+
+
+#meta.create_all(engine) #run once time
+
+def db_inserting(message,songname):
+    users.insert().values(name=message.from_user.first_name)
+    users.insert().values(lastname=message.from_user.last_name)
+    users.insert().values(username=message.from_user.username)
+    users.insert().values(songname=songname)
+
 def get_title(youtube_string):
     video_title = pafy.new(youtube_string)  # instant created
     regex = re.compile(
@@ -33,7 +59,7 @@ def download_from_youTube(youtube_string):  ##Download from YOUTUBE
 # Handle '/start' and '/help'
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
-    bot.reply_to(message, """Hi there, I am EchoBot.""")
+    bot.reply_to(message,'Hi, '+str(message.from_user.first_name)+'!')
 
 
 
@@ -44,13 +70,15 @@ def echo_message(message):
     # print('this is your audio:  ',download_from_youTube(message.text))
     download_from_youTube(message.text)
 
-    bot.reply_to(message,
-                 bot.send_audio(
-                                message.chat.id,
-                                open(get_title(message.text), 'rb'),
-                                timeout=20
-                                )
-                 )
 
+    bot.send_audio(
+                   message.chat.id,
+                   open(get_title(message.text), 'rb'),
+                   timeout=20
+                  )
+
+    db_inserting(message, (pafy.new(message.text)).title)
+
+    os.remove((pafy.new(message.text)).title) #free memory
 
 bot.polling(none_stop=True)
