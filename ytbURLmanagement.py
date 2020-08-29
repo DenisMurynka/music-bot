@@ -1,5 +1,7 @@
-import youtube_dl
-import re,pafy,os
+import youtube_dl               #pip install youtube_dl
+import re, pafy, os             #pip install pafy
+
+
 def get_title(youtube_string):
     video_title = pafy.new(youtube_string)  # instant created
     regex = re.compile(
