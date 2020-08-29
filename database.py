@@ -1,45 +1,19 @@
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
 
-from sqlalchemy import create_engine,Table, Column, Integer, String, MetaData, DateTime
-from datetime import datetime,date
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session,sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 ###
 engine = create_engine('sqlite:///telegrambotDB.db', echo = True)
-meta = MetaData()
 
-###
-mysession = sessionmaker(bind=engine)
-mysession.configure(bind=engine)
-##
-
-##
-session = Session()
-###
-now = datetime.now()
-day = datetime.today()
-today = date.today()
 ###
 Base = declarative_base()
 ###
-users = Table(
-   'users', meta,
-   Column('id', Integer, primary_key = True),
-   Column('name', String),
-   Column('lastname', String),
-   Column('username', String)
 
-)
-using = Table(
-   'using', meta,
-   Column('id', Integer, primary_key = True),
-   Column('name', String),
-   Column('lastname', String),
-   Column('username', String),
-   Column('songname', String),
-   Column('date', DateTime),
-)
+# Session = sessionmaker(bind=engine)
+# session = Session()
+
 class Users(Base):
 
     __tablename__ = 'users'
@@ -48,30 +22,38 @@ class Users(Base):
     name        = Column(String(50))
     lastname    = Column(String(50))
     username    = Column(String(50))
-    #regDate     = Column(DateTime)
 
     def __init__(self, name, lastname, username):
         self.name = name
         self.lastname = lastname
         self.username = username
-        #self.regDate = now.strftime("%H:%M:%S")
+
 
     def __repr__(self):
         return "<Users('%s', '%s','%s')>" % (self.name, self.lastname, self.username)
-    # def createSession(self):
-    #     Session = sessionmaker()
-    #     self.session = Session.configure(bind=engine)
+
+
+class Using(Base):
+    __tablename__ = 'using'
+
+    id          = Column(Integer, primary_key=True)
+    name        = Column(String(50))
+    lastname    = Column(String(50))
+    username    = Column(String(50))
+    songname = Column(String(50))
+    date     = Column(DateTime)
+
+    def __init__(self, name, lastname, username,songname, date):
+        self.name = name
+        self.lastname = lastname
+        self.username = username
+        self.songname = songname
+        self.date = date
+
+    def __repr__(self):
+        return "<Users('%s', '%s','%s','%s')>" % (self.name, self.lastname, self.username,self.date)
+
 
 
 #meta.create_all(engine) #run once time
-
-def db_inserting(message,songname):
-
-    engine.execute('INSERT INTO "using" (name,lastname,username,songname,date ) VALUES (?,?,?,?,?) ',
-                   (message.from_user.first_name,
-                    message.from_user.last_name,
-                    message.from_user.username,
-                    songname,
-                    today.strftime("%d/%m/%Y") +' '+ now.strftime("%H:%M:%S")));
-
 
