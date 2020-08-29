@@ -4,10 +4,10 @@ import telebot                            #pip install telebot
 import logging                            #pip install logging
 import os
 
-from database import db_inserting
+from database import db_inserting,engine,Users
 from ytbURLmanagement import download_from_youTube, get_title
 from admin import TOKEN  #TOKEN is yours bot private key
-from database import Users
+#from database import Users
 bot = telebot.TeleBot(TOKEN)
 
 from sqlalchemy.orm import Session,sessionmaker
@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session,sessionmaker
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger("ex")
 
-
-#session = Session()
+Session=sessionmaker(bind=engine)
+session = Session()
 
 # Handle '/start' and '/help'
 @bot.message_handler(commands=['help', 'start'])
@@ -30,24 +30,25 @@ def send_welcome(message):
 def echo_message(message):
 
     try:
-        download_from_youTube(message.text)
-
-        bot.send_audio(
-                       message.chat.id,
-                       open(get_title(message.text), 'rb'),
-                       timeout=20
-                      )
+        # download_from_youTube(message.text)
+        #
+        # bot.send_audio(
+        #                message.chat.id,
+        #                open(get_title(message.text), 'rb'),
+        #                timeout=20
+        #               )
 
         db_inserting(message, (pafy.new(message.text)).title)
 
-        os.remove((pafy.new(message.text)).title)  #free memory
+        #os.remove((pafy.new(message.text)).title)  #free memory
         raise RuntimeError
     except Exception as e:
         logging.exception("Exception occurred")
         log.exception(e)
 
-
-    #
+    new_user=Users(name=message.from_user.first_name,lastname=message.from_user.last_name,username=message.from_user.username)
+    session.add(new_user)
+    # session.commit()
     # session.add(
     # Users(
     #                 name=message.from_user.first_name,
@@ -56,8 +57,8 @@ def echo_message(message):
     #             )
     # )
     #
-    # session.commit()
-    # session.close()
+    session.commit()
+    #session.close()
 
 
 bot.polling(none_stop=True)
